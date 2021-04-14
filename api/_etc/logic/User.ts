@@ -1,5 +1,5 @@
 import { IError, IResponse } from "../interfaces";
-import { hashSync } from "bcryptjs";
+import { compareSync, hashSync } from "bcryptjs";
 import UserSchema from "../../_etc/models/User";
 
 export class User {
@@ -55,7 +55,7 @@ export class User {
     } else {
       return {
         code: 200,
-        data: { userHandle },
+        data: { accountInfo: userHandle },
       };
     }
   }
@@ -64,14 +64,48 @@ export class User {
     if (!this._username) {
       this._errors.push({ msg: "Missing username in request" });
       return {
-        code: 400,
+        code: 403,
         error: this._errors,
       };
     }
     return { code: 200 };
   }
 
-  login(password: string) {}
+  async login(password: string = ""): Promise<IResponse> {
+    const userCheck = this.isUsernameInRequest();
+    if (userCheck.code !== 200) return userCheck;
+
+    const userData = await this.doesUserExist();
+    if (userData.code !== 200) {
+      this._errors.push({
+        msg: "The given username does not exist in our records",
+      });
+      return {
+        code: 403,
+        error: this._errors,
+      };
+    }
+
+    const dbPassword = userData.data.accountInfo.password;
+    const matches = await compareSync(password, dbPassword);
+
+    if (!matches) {
+      this._errors.push({
+        msg: "The password does not match with our records",
+      });
+      return {
+        code: 403,
+        error: this._errors,
+      };
+    }
+
+    return {
+      code: 200,
+      data: {
+        accountInfo: userData.data.accountInfo,
+      },
+    };
+  }
 
   async register(
     password: string,
@@ -103,7 +137,7 @@ export class User {
 
     return {
       code: 200,
-      data: schemaResult,
+      data: { accountInfo: schemaResult },
     };
   }
 }
