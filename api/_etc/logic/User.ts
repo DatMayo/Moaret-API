@@ -8,6 +8,8 @@ export class User {
     this._username = username;
   }
 
+  login(password: string) {}
+
   register(password: string, passwordConfirmation: string) {}
 
   private validate(...args: string[]) {
