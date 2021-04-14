@@ -3,16 +3,17 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {
-  },
+  "scripts": {},
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.2",
     "@vercel/node": "^1.9.1",
     "prettier": "^2.2.1"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "mongoose": "^5.12.3"
   }
 }
