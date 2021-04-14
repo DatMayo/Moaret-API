@@ -1,4 +1,6 @@
-import { IError } from "../interfaces";
+import { IError, IResponse } from "../interfaces";
+import { hashSync } from "bcryptjs";
+import UserSchema from "../../_etc/models/User";
 
 export class User {
   private _errors: IError[] = [];
@@ -8,14 +10,100 @@ export class User {
     this._username = username;
   }
 
+  comparePasswords(password: string, passwordConfirmation: string): IResponse {
+    if (!password || !passwordConfirmation) {
+      this._errors.push({
+        msg: "You need to provide a password and a password confirmation!",
+      });
+      return {
+        code: 400,
+        error: this._errors,
+      };
+    }
+    if (password.length < 8) {
+      this._errors.push({
+        msg: "The password needs to be at least 8 characters long!",
+      });
+      return {
+        code: 400,
+        error: this._errors,
+      };
+    }
+    if (password !== passwordConfirmation) {
+      this._errors.push({
+        msg: "The given passwords dont match!",
+      });
+      return {
+        code: 400,
+        error: this._errors,
+      };
+    }
+    return {
+      code: 200,
+    };
+  }
+
+  async doesUserExist(username?: string): Promise<IResponse> {
+    let user = username || this._username;
+    const userHandle = await UserSchema.findOne({
+      username: user,
+    });
+    if (!userHandle) {
+      return {
+        code: 404,
+      };
+    } else {
+      return {
+        code: 200,
+        data: { userHandle },
+      };
+    }
+  }
+
+  isUsernameInRequest(): IResponse {
+    if (!this._username) {
+      this._errors.push({ msg: "Missing username in request" });
+      return {
+        code: 400,
+        error: this._errors,
+      };
+    }
+    return { code: 200 };
+  }
+
   login(password: string) {}
 
-  register(password: string, passwordConfirmation: string) {}
+  async register(
+    password: string,
+    passwordConfirmation: string
+  ): Promise<IResponse> {
+    const userCheck = this.isUsernameInRequest();
+    if (userCheck.code !== 200) return userCheck;
 
-  private validate(...args: string[]) {
-    for (let item of args) {
-      if (!item)
-        return this._errors.push({ msg: "Required field can not be empty" });
+    const passwordCheck = this.comparePasswords(password, passwordConfirmation);
+    if (passwordCheck.code !== 200) return passwordCheck;
+
+    const doesUserExist = await this.doesUserExist();
+    if (doesUserExist.code !== 404) {
+      this._errors.push({
+        msg: "There is already an account registered with this username",
+      });
+      return {
+        code: 400,
+        error: this._errors,
+      };
     }
+
+    const hashedPassword = hashSync(password);
+
+    const schemaResult = await new UserSchema({
+      username: this._username,
+      password: hashedPassword,
+    }).save();
+
+    return {
+      code: 200,
+      data: schemaResult,
+    };
   }
 }
