@@ -8,10 +8,19 @@ export class User {
   private _errors: IError[] = [];
   private _username: string;
 
+  /**
+   * Creates a new instance to perform user actions
+   * @param {string} username Username for this instance
+   */
   constructor(username: string) {
     this._username = username;
   }
 
+  /**
+   * Compares two passwords and checks if they match or even exist
+   * @param {string} password User typed password
+   * @param {string} passwordConfirmation Password to check against "password"
+   */
   comparePasswords(password: string, passwordConfirmation: string): IResponse {
     if (!password || !passwordConfirmation) {
       this._errors.push({
@@ -45,6 +54,10 @@ export class User {
     };
   }
 
+  /**
+   * Checks if a user exists in our database
+   * @param {string} username? If provided, checks if this user exists. Otherwise the instance user will be checked
+   */
   async doesUserExist(username?: string): Promise<IResponse> {
     let user = username || this._username;
     const userHandle = await UserSchema.findOne({
@@ -62,6 +75,9 @@ export class User {
     }
   }
 
+  /**
+   * Checks if a user was provided when instance was created
+   */
   isUsernameInRequest(): IResponse {
     if (!this._username) {
       this._errors.push({ msg: "Missing username in request" });
@@ -73,6 +89,10 @@ export class User {
     return { code: 200 };
   }
 
+  /**
+   * Performs all needed tasks to login a user
+   * @param {string} password Password to check for the instanciated user
+   */
   async login(password: string = ""): Promise<IResponse> {
     const userCheck = this.isUsernameInRequest();
     if (userCheck.code !== 200) return userCheck;
@@ -115,6 +135,11 @@ export class User {
     };
   }
 
+  /**
+   * Registers a user with the instance user and password
+   * @param password User provided password
+   * @param passwordConfirmation User provided password confirmations
+   */
   async register(
     password: string,
     passwordConfirmation: string
