@@ -122,6 +122,8 @@ export class User {
     const userCheck = this.isUsernameInRequest();
     if (userCheck.code !== 200) return userCheck;
 
+    await dbConnect();
+
     const passwordCheck = this.comparePasswords(password, passwordConfirmation);
     if (passwordCheck.code !== 200) return passwordCheck;
 
