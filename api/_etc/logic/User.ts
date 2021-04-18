@@ -1,6 +1,8 @@
 import { IError, IResponse } from "../interfaces";
 import { compareSync, hashSync } from "bcryptjs";
 import UserSchema from "../../_etc/models/User";
+import dbConnect from "../util/dbConnect";
+import { Token } from "./Token";
 
 export class User {
   private _errors: IError[] = [];
@@ -75,6 +77,8 @@ export class User {
     const userCheck = this.isUsernameInRequest();
     if (userCheck.code !== 200) return userCheck;
 
+    await dbConnect();
+
     const userData = await this.doesUserExist();
     if (userData.code !== 200) {
       this._errors.push({
@@ -99,10 +103,14 @@ export class User {
       };
     }
 
+    const tokenHandle = new Token();
+    const tokenData = await tokenHandle.create(userData.data.accountInfo._id);
+
     return {
       code: 200,
       data: {
         accountInfo: userData.data.accountInfo,
+        tokenInfo: tokenData.data.tokenInfo,
       },
     };
   }
@@ -116,6 +124,8 @@ export class User {
 
     const passwordCheck = this.comparePasswords(password, passwordConfirmation);
     if (passwordCheck.code !== 200) return passwordCheck;
+
+    await dbConnect();
 
     const doesUserExist = await this.doesUserExist();
     if (doesUserExist.code !== 404) {
