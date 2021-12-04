@@ -1,12 +1,15 @@
 import { IError, IResponse } from "../interfaces";
 import { compareSync, hashSync } from "bcryptjs";
 import UserSchema from "../../_etc/models/User";
+import TokenSchema from "../../_etc/models/Token";
 import dbConnect from "../util/dbConnect";
 import { Token } from "./Token";
+import { FilterQuery } from "mongoose";
 
 export class User {
   private _errors: IError[] = [];
-  private _username: string;
+  private _queryToken: string;
+  private readonly _username: string;
 
   /**
    * Creates a new instance to perform user actions
@@ -14,6 +17,51 @@ export class User {
    */
   constructor(username: string) {
     this._username = username;
+  }
+
+  async checkUserToken(): Promise<IResponse> {
+    if (!this._queryToken) {
+      this._errors.push({ msg: "Missing token in request body" });
+      return {
+        code: 403,
+        error: this._errors,
+      };
+    }
+
+    const userHandle = await UserSchema.findOne({
+      username: this._username,
+    });
+
+    if (!userHandle) {
+      this._errors.push({ msg: "The provided user could not be found" });
+      return {
+        code: 403,
+        error: this._errors,
+      };
+    }
+
+    const tokenHandle = await TokenSchema.findOne({
+      userId: userHandle._id,
+      token: this._queryToken,
+    });
+
+    if (!tokenHandle) {
+      this._errors.push({ msg: "The given token is invalid for this user" });
+      return {
+        code: 403,
+        error: this._errors,
+      };
+    }
+
+    tokenHandle.updatedAt = new Date();
+    tokenHandle.save();
+
+    return {
+      code: 200,
+      data: {
+        accountInfo: userHandle,
+      },
+    };
   }
 
   /**
@@ -89,6 +137,43 @@ export class User {
     return { code: 200 };
   }
 
+  async listUser(params?: FilterQuery<any>): Promise<IResponse> {
+    if (!this._queryToken) {
+      this._errors.push({ msg: "Missing token in request header" });
+      return {
+        code: 403,
+        error: this._errors,
+      };
+    }
+
+    await dbConnect();
+
+    const tokenResponse = await this.checkUserToken();
+    if (tokenResponse.code !== 200) {
+      return {
+        code: tokenResponse.code,
+        error: tokenResponse.error,
+      };
+    }
+
+    const isAdmin: boolean = tokenResponse.data.accountInfo.isAdmin as boolean;
+    if (!isAdmin) {
+      this._errors.push({
+        msg: "The given user does not have the permission to view the userlist",
+      });
+      return { code: 403, error: this._errors };
+    }
+
+    const userList = await UserSchema.find(params, { password: false }).sort({
+      username: 0,
+    });
+
+    return {
+      code: 200,
+      data: { userList },
+    };
+  }
+
   /**
    * Performs all needed tasks to login a user
    * @param {string} password Password to check for the instanciated user
@@ -147,8 +232,6 @@ export class User {
     const userCheck = this.isUsernameInRequest();
     if (userCheck.code !== 200) return userCheck;
 
-    await dbConnect();
-
     const passwordCheck = this.comparePasswords(password, passwordConfirmation);
     if (passwordCheck.code !== 200) return passwordCheck;
 
@@ -176,5 +259,13 @@ export class User {
       code: 200,
       data: { accountInfo: schemaResult },
     };
+  }
+
+  /**
+   * Sets the token for further requests
+   * @param {string} token Token to use for further queries
+   */
+  setQueryToken(token: string): void {
+    this._queryToken = token;
   }
 }
