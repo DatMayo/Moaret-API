@@ -8,7 +8,7 @@ if (!MONGODB_URI) {
   );
 }
 
-async function dbConnect() {
+async function dbConnect(): Promise<void> {
   // check if we have a connection to the database or if it's currently
   // connecting or disconnecting (readyState 1, 2 and 3)
   if (mongoose.connection?.readyState >= 1) {
