@@ -6,9 +6,11 @@ const ProjectSchema = new mongoose.Schema({
     required: [true, "Please provide a Project name"],
   },
   owner: {
-    type: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: [true, "Please provide an owner"],
   },
 });
 
-export default mongoose.models.UserSchema ||
+export default mongoose.models.ProjectSchema ||
   mongoose.model("Project", ProjectSchema);

@@ -28,17 +28,16 @@ export class User {
       };
     }
 
-    const userHandle = await UserSchema.findOne({
-      username: this._username,
-    });
+    const result = await this.doesUserExist();
 
-    if (!userHandle) {
-      this._errors.push({ msg: "The provided user could not be found" });
+    if (result.code !== 200) {
       return {
         code: 403,
-        error: this._errors,
+        error: result.error,
       };
     }
+
+    const userHandle = result.data.accountInfo;
 
     const tokenHandle = await TokenSchema.findOne({
       userId: userHandle._id,
@@ -196,7 +195,7 @@ export class User {
     }
 
     const dbPassword = userData.data.accountInfo.password;
-    const matches = await compareSync(password, dbPassword);
+    const matches = compareSync(password, dbPassword);
 
     if (!matches) {
       this._errors.push({

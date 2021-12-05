@@ -1,8 +1,9 @@
 import { IResponse } from "../interfaces";
 import TokenSchema from "../../_etc/models/Token";
+import * as mongoose from "mongoose";
 
 export class Token {
-  async create(guid: string): Promise<IResponse> {
+  async create(guid: mongoose.Schema.Types.ObjectId): Promise<IResponse> {
     try {
       const tokenHandle = await TokenSchema.findOne({
         userId: guid,

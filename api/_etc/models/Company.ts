@@ -16,5 +16,5 @@ const CompanySchema = new mongoose.Schema({
   },
 });
 
-export default mongoose.models.UserSchema ||
+export default mongoose.models.CompanySchema ||
   mongoose.model("Company", CompanySchema);
