@@ -1,11 +1,12 @@
 import { IError } from "./index";
+import * as mongoose from "mongoose";
 
 export class IResponse {
   code: number;
   error?: IError[];
   data?: {
     accountInfo?: {
-      _id: string;
+      _id: mongoose.Schema.Types.ObjectId;
       username: string;
       password: string;
       [propName: string]: unknown;
